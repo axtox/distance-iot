@@ -15,14 +15,8 @@
         },
         {
             "label": "publish",
-            "command": "dotnet",
+            "command": "./send-to-pi.sh",
             "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/distance-iot.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
             "problemMatcher": "$msCompile"
         },
         {
