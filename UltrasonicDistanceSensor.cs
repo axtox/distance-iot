@@ -34,9 +34,9 @@ namespace Distance {
 
             //get milisecond wave time travel (back and forth)
             var waveTravelTime = _controller.Read(_echoPin);
-            Console.WriteLine(waveTravelTime.ToString());
+
             //calculate distance
-            return 1;
+            return (int)waveTravelTime;
         }
     }
 }

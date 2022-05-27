@@ -11,11 +11,14 @@ namespace Distance {
             var sensor = new UltrasonicDistanceSensor(23, 24, controller);
             var indicator = new Indicator(17, controller);
 
-            indicator.On();
-            Thread.Sleep(1000);
-            indicator.Off();
-
-            var data = sensor.Measure();
+            while(true) 
+            {
+                var data = sensor.Measure();
+                if(data < 1)
+                    indicator.On();
+                else
+                    indicator.Off();
+            }
         }
     }
 }
