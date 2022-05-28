@@ -1,4 +1,5 @@
 using System.Device.Gpio;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Distance {
@@ -21,7 +22,10 @@ namespace Distance {
             controller.OpenPin(echoPin, PinMode.Input);
         }
 
-        public int Measure() 
+        /// <summary>
+        /// Measures the distance in millimeters using ultrasonic waves
+        /// </summary>
+        public double Measure() 
         {
             //clear previous state of the device
             _controller.Write(_triggerPin, PinValue.Low);
@@ -32,11 +36,34 @@ namespace Distance {
             Thread.Sleep(10);
             _controller.Write(_triggerPin, PinValue.Low);
 
-            //get milisecond wave time travel (back and forth)
-            var waveTravelTime = _controller.Read(_echoPin);
+            //get millisecond wave time travel (back and forth)
+            var waveTravelTime = GetMillisecondTravelTime();
 
-            //calculate distance
-            return (int)waveTravelTime;
+            //calculate distance in kilometers and convert to millimeters
+            return waveTravelTime * SoundWaveSpeedKilometerPerMillisecond / 2 * 10000;
+        }
+
+        private long GetMillisecondTravelTime() {
+            WaitForSignal();
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            StartReadingSignal();
+
+            stopWatch.Stop();
+
+            return stopWatch.ElapsedMilliseconds;
+        }
+
+        private void WaitForSignal() 
+        {
+            while(_controller.Read(_echoPin) == PinValue.Low);
+        }
+
+        private void StartReadingSignal() 
+        {
+            while(_controller.Read(_echoPin) == PinValue.High);
         }
     }
 }

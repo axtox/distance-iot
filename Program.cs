@@ -13,8 +13,10 @@ namespace Distance {
 
             while(true) 
             {
-                var data = sensor.Measure();
-                if(data < 1)
+                var distanceInCantimeters = sensor.Measure() / 10;
+                Console.WriteLine($"{(distanceInCantimeters):0.#} cm.");
+                
+                if(distanceInCantimeters < 20)
                     indicator.On();
                 else
                     indicator.Off();
