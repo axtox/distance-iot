@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Device.Gpio;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,11 +9,13 @@ namespace Distance {
             GpioController controller = new GpioController();
 
             var sensor = new UltrasonicDistanceSensor(23, 24, controller);
+            sensor.DefaultMeasureUnit = MeasureUnit.cm;
+
             var indicator = new Indicator(17, controller);
 
             while(true) 
             {
-                var distanceInCantimeters = sensor.Measure() / 10;
+                var distanceInCantimeters = sensor.Measure();
                 Console.WriteLine($"{(distanceInCantimeters):0.#} cm.");
                 
                 if(distanceInCantimeters < 20)
