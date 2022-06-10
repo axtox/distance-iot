@@ -8,7 +8,7 @@ namespace Distance {
         static void Main(string[] args) {
             GpioController controller = new GpioController();
 
-            var sensor = new UltrasonicDistanceSensor(23, 24, controller);
+            var sensor = new UltrasonicDistanceSensor(4, 17, controller);
             sensor.DefaultMeasureUnit = MeasureUnit.cm;
 
             var indicator = new Indicator(17, controller);

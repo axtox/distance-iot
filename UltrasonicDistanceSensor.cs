@@ -1,7 +1,6 @@
 using System.Device.Gpio;
-using System.Diagnostics;
-using System.Threading;
-using System.Linq;
+using Iot.Device.Hcsr04;
+using UnitsNet;
 
 namespace Distance {
     internal enum MeasureUnit { mm = 1, cm = 10, m = 100 }
@@ -10,103 +9,76 @@ namespace Distance {
     {
         private readonly int _triggerPin;
         private readonly int _echoPin;
+        private Hcsr04 _sensor;
 
-        private readonly Stopwatch stopWatch = new Stopwatch();
-
-        // based on the statement that the speed of sound is 343 m/s
-        private const decimal SoundWaveSpeedMillimeterPerMillisecond = 343.3M;
-        private const int RepeatMeasurmentTimes = 5;
-        private const int AccuracyErrorInMillimeters = 50;
+        private const int AccuracyErrorInMillimeters = 3000;
         public MeasureUnit DefaultMeasureUnit = MeasureUnit.mm;
 
         public UltrasonicDistanceSensor(int triggerPin, int echoPin, GpioController controller) : base(controller)
         {
             _triggerPin = triggerPin;
             _echoPin = echoPin;
-            
-            controller.OpenPin(triggerPin, PinMode.Output);
-            controller.OpenPin(echoPin, PinMode.Input);
+            _sensor = new Hcsr04(controller, triggerPin, echoPin, false);
         }
 
         /// <summary>
         /// Measures the distance in <see cref="DefaultMeasureUnit"/> using ultrasonic speed
         /// </summary>
-        public decimal Measure() 
+        /// <returns>Returns distance in <see cref="DefaultMeasureUnit"/></returns>
+        public double Measure() 
         {
-            return MeasureSignalTravelTime() * SoundWaveSpeedMillimeterPerMillisecond / 2 / (decimal)DefaultMeasureUnit;
-        }
-
-        private long MeasureSignalTravelTime() {
-            SendSignal();
-
-            stopWatch.Restart();
-
-            WaitForSignal();
-            ReadSignal();
-
-            stopWatch.Stop();
-
-            return stopWatch.ElapsedMilliseconds;
-        }
-
-        private void SendSignal() 
-        {
-            //clear previous state of the device
-            _controller.Write(_triggerPin, PinValue.Low);
-            Thread.Sleep(2);
-
-            //send microwave for measuring
-            _controller.Write(_triggerPin, PinValue.High);
-            Thread.Sleep(2);
-            _controller.Write(_triggerPin, PinValue.Low);
-        }
-
-        private void WaitForSignal() 
-        {
-            while(_controller.Read(_echoPin) == PinValue.Low);
-        }
-
-        private void ReadSignal() 
-        {
-            while(_controller.Read(_echoPin) == PinValue.High);
-        }
+            return Measure(1);
+        } 
 
         /// <summary>
         /// Measures the distance in <see cref="DefaultMeasureUnit"/> using ultrasonic speed. 
         /// Accuracy achieved by repeated measurements and sensor error removal
         /// </summary>
-        public decimal MeasureWithPrecision() 
+        /// <param name="precisionRepeats">Times to repeat mesurments to calculate average between them</param>
+        /// <returns>Returns distance in <see cref="DefaultMeasureUnit"/></returns>
+        public double Measure(int precisionRepeats) 
         {
-            return CollectAccurateTravelTime() * SoundWaveSpeedMillimeterPerMillisecond / 2 / (decimal)DefaultMeasureUnit;
+            return CalculateAverageDistanceExcludingError(precisionRepeats) / (double)DefaultMeasureUnit;
         }
-
-        private decimal CollectAccurateTravelTime() {
-            var allMeasurments = new decimal[RepeatMeasurmentTimes];
-
-            for(var measurment = 0; measurment < RepeatMeasurmentTimes; measurment++) 
-            {
-                allMeasurments[measurment] = MeasureSignalTravelTime();
-            }
-
-            return CalculateAverageExcludingError(allMeasurments);
-        }
-
-        private decimal CalculateAverageExcludingError(decimal[] measurments) 
+        
+        private double CalculateAverageDistanceExcludingError(int precisionRepeats) 
         {
-            Array.Sort(measurments);
+            var measurements = CollectMeasurments(precisionRepeats);
 
-            var ethalonMeasurment = measurments[(int)Math.Round(measurments.Length / 2d)];
+            Array.Sort(measurements);
 
-            var accurateMeasurements = new List<decimal>(measurments.Length);
-            foreach(var measurement in measurments) 
+            var ethalonMeasurment = measurements[(int)Math.Floor(measurements.Length / 2d)];
+
+            var accurateMeasurements = new List<Length>(measurements.Length);
+            foreach(var measurement in measurements) 
             {
                 var differenceWithEthalon = measurement - ethalonMeasurment;
 
-                if(Math.Abs(differenceWithEthalon) <= AccuracyErrorInMillimeters)
+                if(Math.Abs(differenceWithEthalon.Millimeters) <= AccuracyErrorInMillimeters)
                     accurateMeasurements.Add(measurement);
             }
 
-            return accurateMeasurements.Average();
+            var averageResult = accurateMeasurements.Average(measurement => measurement.Millimeters);
+
+            return averageResult == 0 ? double.PositiveInfinity : averageResult;
+        }
+
+        private Length[] CollectMeasurments(int precisionRepeats) {
+            var allMeasurments = new Length[precisionRepeats];
+
+            for(var measurment = 0; measurment < precisionRepeats; measurment++) 
+            {
+                allMeasurments[measurment] = ReadDistanceFromSensor();
+            }
+
+            return allMeasurments;
+        }
+
+        private Length ReadDistanceFromSensor() {
+            Thread.Sleep(60);
+            return _sensor.TryGetDistance(out Length result) 
+                    ? result 
+                    : Length.FromMillimeters(0);
         }
     }
 }
