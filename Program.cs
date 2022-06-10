@@ -13,15 +13,19 @@ namespace Distance {
 
             var indicator = new Indicator(23, controller);
 
+            var display = new OledDisplay(controller);
             while(true) 
             {
                 var distanceInCantimeters = sensor.Measure();
                 Console.WriteLine($"{(distanceInCantimeters):0.#} cm.");
+                display.Message($"{(distanceInCantimeters):0.#} cm.");
                 
                 if(distanceInCantimeters < 20)
                     indicator.On();
                 else
                     indicator.Off();
+
+                Thread.Sleep(500);
             }
         }
     }
