@@ -12,12 +12,12 @@ namespace Distance {
 
         public void On() 
         {            
-            _controller.Write(_gpioPin, PinValue.Low);
+            _controller.Write(_gpioPin, PinValue.High);
         }      
         
         public void Off() 
         {
-            _controller.Write(_gpioPin, PinValue.High);
+            _controller.Write(_gpioPin, PinValue.Low);
         }
     }
 }

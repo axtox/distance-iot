@@ -11,7 +11,7 @@ namespace Distance {
             var sensor = new UltrasonicDistanceSensor(4, 17, controller);
             sensor.DefaultMeasureUnit = MeasureUnit.cm;
 
-            var indicator = new Indicator(17, controller);
+            var indicator = new Indicator(23, controller);
 
             while(true) 
             {
